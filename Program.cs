@@ -11,7 +11,6 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     options.JsonSerializerOptions.AllowTrailingCommas = true;
 });
-// use ConnectionStrings - DefaultConnection
 builder.Services.AddDbContext<AapiDbContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection") ?? "error"));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
