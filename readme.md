@@ -1,6 +1,6 @@
 # AAPI - Anime API
 
-Simple C# REST API for managing list of animes and images associated with them.
+Simple C# REST API for managing users, animes and keeping track of your anime list.
 
 My goal is recreating something resembling [MAL](https://myanimelist.net).
 
