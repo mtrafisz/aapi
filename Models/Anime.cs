@@ -15,6 +15,8 @@ public class Anime
 
     [JsonIgnore]
     public ICollection<Image> Images { get; set; } = new List<Image>();
+    [JsonIgnore]
+    public ICollection<Entry> Entries { get; set; } = new List<Entry>();
 }
 
 public class AnimePatch

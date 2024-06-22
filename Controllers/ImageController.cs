@@ -1,5 +1,6 @@
 ﻿using Aapi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aapi.Controllers;
 
@@ -13,34 +14,35 @@ public class ImageController : ControllerBase
         _context = context;
     }
 
-    // create new image from file and anime id
-    // POST: api/Image
-    [HttpPost("{animeId}")]
-    public async Task<ActionResult<Image>> PostImage(long animeId, Image.ImageType type, IFormFile file)
+    // update image by id
+    // PUT: api/Image/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutImage(long id, Image image)
     {
-        var anime = await _context.Animes.FindAsync(animeId);
-        if (anime == null)
+        if (id != image.Id)
         {
-            return NotFound();
+            return BadRequest();
         }
 
-        var image = new Image
+        _context.Entry(image).State = EntityState.Modified;
+
+        try
         {
-            AnimeId = animeId,
-            Type = type,
-            Url = $"Data/Images/{Guid.NewGuid()}.png"
-        };
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ImageExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
 
-        using var stream = new FileStream(image.Url, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        _context.Images.Add(image);
-        await _context.SaveChangesAsync();
-
-        anime.Images.Add(image);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetImage", new { id = image.Id }, image);
+        return NoContent();
     }
 
     // get image by id
@@ -75,4 +77,24 @@ public class ImageController : ControllerBase
         return NoContent();
     }
 
+    // get image FILE by id
+    // GET: api/Image/5/file
+    [HttpGet("{id}/file")]
+    public async Task<IActionResult> GetImageFile(long id)
+    {
+        var image = await _context.Images.FindAsync(id);
+        if (image == null)
+        {
+            return NotFound();
+        }
+
+        var path = Path.Combine(Directory.GetCurrentDirectory(), image.Url);
+        var stream = System.IO.File.OpenRead(path);
+        return File(stream, "image/png");
+    }
+
+    private bool ImageExists(long id)
+    {
+        return _context.Images.Any(e => e.Id == id);
+    }
 }

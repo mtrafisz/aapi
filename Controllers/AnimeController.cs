@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Aapi.Models;
+using Aapi.Utility;
+
 
 namespace Aapi.Controllers;
 
@@ -123,7 +125,7 @@ public class AnimeController : ControllerBase
 
     // GET: api/Anime/5/Images
     [HttpGet("{id}/Images")]
-    public async Task<ActionResult<IEnumerable<Image>>> GetImages(long id)
+    public async Task<ActionResult<IEnumerable<Models.Image>>> GetImages(long id)
     {
         var anime = await _context.Animes.FindAsync(id);
         if (anime == null)
@@ -132,6 +134,37 @@ public class AnimeController : ControllerBase
         }
 
         return await _context.Images.Where(i => i.AnimeId == id).ToListAsync();
+    }
+
+    // POST: api/Anime/5/Images
+    [HttpPost("{id}/Images")]
+    public async Task<ActionResult<Models.Image>> PostImage(long id, Models.Image.ImageType type, IFormFile file)
+    {
+        var anime = await _context.Animes.FindAsync(id);
+        if (anime == null)
+        {
+            return NotFound();
+        }
+
+        var image = new Models.Image
+        {
+            AnimeId = id,
+            Type = type,
+            Url = $"Data/Images/Anime/{anime.Id}/{Guid.NewGuid()}.png"
+        };
+
+        var directory = Path.GetDirectoryName(image.Url);
+        if (directory != null && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        ImageUtils.ResizeImage(ImageUtils.ImageFromIFormFile(file), 300, 500).Save(image.Url, System.Drawing.Imaging.ImageFormat.Png);
+
+        _context.Images.Add(image);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetImage", new { id = image.Id }, image);
     }
 
     private bool AnimeExists(long id)
